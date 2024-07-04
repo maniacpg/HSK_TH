@@ -22,11 +22,10 @@ namespace WindowsFormsApp
         {
             InitializeComponent();
             dgvNV.CellFormatting += new DataGridViewCellFormattingEventHandler(dgvNV_CellFormatting);
-            btnKhoiTao.Click += new EventHandler(btnKhoiTao_Click);           
+            btnKhoiTao.Click += new EventHandler(btnKhoiTao_Click);
 
             btnSearch.Enabled = true;
 
-            // Đăng ký sự kiện TextChanged và Validating cho các ô nhập liệu
             txbMaNV.TextChanged += new EventHandler(txbMaNV_TextChanged);
             txbHoTenNV.TextChanged += new EventHandler(txbHoTenNV_TextChanged);
             txbSDTNV.TextChanged += new EventHandler(txbSDTNV_TextChanged);
@@ -47,7 +46,7 @@ namespace WindowsFormsApp
 
         private void LoadData()
         {
-            string querySelect = "Select_NhanVien"; // stored procedure
+            string querySelect = "Select_NhanVien";
 
             try
             {
@@ -207,7 +206,7 @@ namespace WindowsFormsApp
 
         private void btnKhoiTao_Click(object sender, EventArgs e)
         {
-            // Xóa giá trị trong các ô nhập liệu
+            
             txbMaNV.Text = string.Empty;
             txbMaNV.ReadOnly = false;
             txbHoTenNV.Text = string.Empty;
@@ -217,7 +216,7 @@ namespace WindowsFormsApp
             rb_nam.Checked = false;
             rb_nu.Checked = false;
 
-            CheckInputFields(); // Kiểm tra lại trạng thái của nút
+            CheckInputFields(); 
         }
 
         private void radioButton2_CheckedChanged(object sender, EventArgs e)
@@ -226,7 +225,7 @@ namespace WindowsFormsApp
 
         private void dgvNV_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            // Lấy dữ liệu từ dòng được chọn trong DataGridView
+            
             int index = dgvNV.CurrentRow.Index;
             txbMaNV.Text = dv[index]["id"].ToString();
             txbMaNV.ReadOnly = true;
@@ -237,7 +236,7 @@ namespace WindowsFormsApp
             rb_nam.Checked = (bool)(dv[index]["GioiTinh"]);
             rb_nu.Checked = !(bool)(dv[index]["GioiTinh"]);
 
-            // Ẩn nút "Thêm mới", hiển thị nút "Sửa"
+            
             btnAdd.Enabled = false;
             btnEdit.Enabled = true;
         }
@@ -246,20 +245,17 @@ namespace WindowsFormsApp
         {
             int index = dgvNV.CurrentRow.Index;
             int id = Convert.ToInt32(dv[index]["id"]);
-
             try
             {
                 DialogResult dialogResult = MessageBox.Show("Có chắc muốn xoá mã NV " + id + " không?",
                     "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
-
                 if (dialogResult == DialogResult.Yes)
                 {
                     bool success = DeleteNhanVien(id);
-
                     if (success)
                     {
                         MessageBox.Show("Xóa nhân viên thành công.");
-                        LoadData(); // Load lại dữ liệu sau khi xóa
+                        LoadData(); 
                     }
                     else
                     {
@@ -276,31 +272,31 @@ namespace WindowsFormsApp
         private bool DeleteNhanVien(int id)
         {
             string strDelete = "Delete_NhanVien";
-
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                SqlDataAdapter adapter = new SqlDataAdapter();
-
-                try
+                using (SqlCommand cmd = new SqlCommand(strDelete, conn))
                 {
-                    adapter.DeleteCommand = new SqlCommand(strDelete, conn);
-                    adapter.DeleteCommand.CommandType = CommandType.StoredProcedure;
-                    adapter.DeleteCommand.Parameters.AddWithValue("@id", id);
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@id", id);
 
-                    conn.Open();
-                    int rowsAffected = adapter.DeleteCommand.ExecuteNonQuery();
-
-                    return rowsAffected > 0;
-                }
-                catch (SqlException ex)
-                {
-                    Console.WriteLine("Lỗi SQL: " + ex.Message);
-                    return false;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Lỗi: " + ex.Message);
-                    return false;
+                    try
+                    {
+                        conn.Open();
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                        return rowsAffected > 0;
+                    }
+                    catch (SqlException ex)
+                    {
+                        Console.WriteLine("Lỗi SQL: " + ex.Message);
+                        MessageBox.Show("Lỗi SQL: " + ex.Message, "Lỗi Database", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Lỗi: " + ex.Message);
+                        MessageBox.Show("Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
                 }
             }
         }
@@ -310,23 +306,23 @@ namespace WindowsFormsApp
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            // Lấy dữ liệu từ các ô nhập liệu trên form
+            
             int id = Convert.ToInt32(txbMaNV.Text);
             string tenNV = txbHoTenNV.Text;
             string sdtNV = txbSDTNV.Text;
             string emailNV = txbEmailNV.Text;
-            bool gioiTinh = rb_nam.Checked; // True nếu là Nam, False nếu là Nữ
+            bool gioiTinh = rb_nam.Checked; 
             DateTime ngaySinh = dtpNgaySinh.Value;
 
-            // Thực hiện thêm nhân viên vào cơ sở dữ liệu
+            
             string connectionString = ConfigurationManager.ConnectionStrings["QLCF"].ConnectionString;
             bool success = ThemNhanVien(connectionString, id, tenNV, sdtNV, emailNV, gioiTinh, ngaySinh);
 
             if (success)
             {
                 MessageBox.Show("Thêm nhân viên thành công.");
-                
-                LoadData(); // Ví dụ, load lại dữ liệu từ cơ sở dữ liệu
+
+                LoadData(); 
             }
             else
             {
@@ -336,35 +332,56 @@ namespace WindowsFormsApp
 
         private static bool ThemNhanVien(string connectionString, int id, string tenNV, string sdtNV, string emailNV, bool gioiTinh, DateTime ngaySinh)
         {
+            string querySelect = "Select_NhanVien";
             string strInsert = "Insert_NhanVien";
-
-            // Khởi tạo SqlDataAdapter với chuỗi kết nối
-            SqlDataAdapter adapter = new SqlDataAdapter();
+            int rowsAffected = 0;
 
             try
             {
-                // Tạo SqlConnection từ chuỗi kết nối
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    // Tạo SqlCommand cho Insert_NhanVien stored procedure
-                    adapter.InsertCommand = new SqlCommand(strInsert, conn);
-                    adapter.InsertCommand.CommandType = CommandType.StoredProcedure;
+                    
+                    DataTable dt = new DataTable();
 
-                    // Thêm các tham số cho InsertCommand
-                    adapter.InsertCommand.Parameters.AddWithValue("@id", id);
-                    adapter.InsertCommand.Parameters.AddWithValue("@TenNV", tenNV);
-                    adapter.InsertCommand.Parameters.AddWithValue("@SDTNV", sdtNV);
-                    adapter.InsertCommand.Parameters.AddWithValue("@emailNV", emailNV);
-                    adapter.InsertCommand.Parameters.AddWithValue("@GioiTinh", gioiTinh);
-                    adapter.InsertCommand.Parameters.AddWithValue("@NgaySinh", ngaySinh);
+                    
+                    using (SqlCommand cmdSelect = new SqlCommand(querySelect, conn))
+                    {
+                        cmdSelect.CommandType = CommandType.StoredProcedure;
 
-                    // Mở kết nối và thực thi thêm mới
-                    conn.Open();
-                    int rowsAffected = adapter.InsertCommand.ExecuteNonQuery();
+                        
+                        using (SqlDataAdapter adapter = new SqlDataAdapter(cmdSelect))
+                        {
+                            adapter.Fill(dt);
+                        }
+                    }
 
-                    // Trả về true nếu thêm thành công, false nếu không
-                    return rowsAffected > 0;
+                    
+                    DataRow newRow = dt.NewRow();
+                    newRow["id"] = id;
+                    newRow["TenNV"] = tenNV;
+                    newRow["SDTNV"] = sdtNV;
+                    newRow["emailNV"] = emailNV;
+                    newRow["GioiTinh"] = gioiTinh;
+                    newRow["NgaySinh"] = ngaySinh;
+                    dt.Rows.Add(newRow);
+
+                    
+                    using (SqlCommand cmdInsert = new SqlCommand(strInsert, conn))
+                    {
+                        cmdInsert.CommandType = CommandType.StoredProcedure;
+                        cmdInsert.Parameters.AddWithValue("@id", id);
+                        cmdInsert.Parameters.AddWithValue("@TenNV", tenNV);
+                        cmdInsert.Parameters.AddWithValue("@SDTNV", sdtNV);
+                        cmdInsert.Parameters.AddWithValue("@emailNV", emailNV);
+                        cmdInsert.Parameters.AddWithValue("@GioiTinh", gioiTinh);
+                        cmdInsert.Parameters.AddWithValue("@NgaySinh", ngaySinh);
+
+                        conn.Open();
+                        rowsAffected = cmdInsert.ExecuteNonQuery();
+                    }
                 }
+
+                return rowsAffected > 0;
             }
             catch (SqlException ex)
             {
@@ -378,17 +395,19 @@ namespace WindowsFormsApp
             }
         }
 
+
+
         private void btnEdit_Click(object sender, EventArgs e)
         {
-            // Lấy dữ liệu từ các ô nhập liệu trên form
+            
             int id = Convert.ToInt32(txbMaNV.Text);
             string tenNV = txbHoTenNV.Text;
             string sdtNV = txbSDTNV.Text;
             string emailNV = txbEmailNV.Text;
-            bool gioiTinh = rb_nam.Checked; // True nếu là Nam, False nếu là Nữ
+            bool gioiTinh = rb_nam.Checked; 
             DateTime ngaySinh = dtpNgaySinh.Value;
 
-            // Thực hiện cập nhật nhân viên vào cơ sở dữ liệu
+           
             string connectionString = ConfigurationManager.ConnectionStrings["QLCF"].ConnectionString;
             bool success = UpdateNhanVien(connectionString, id, tenNV, sdtNV, emailNV, gioiTinh, ngaySinh);
 
@@ -396,7 +415,7 @@ namespace WindowsFormsApp
             {
                 MessageBox.Show("Cập nhật nhân viên thành công.");
 
-                LoadData(); // Ví dụ, load lại dữ liệu từ cơ sở dữ liệu
+                LoadData(); 
             }
             else
             {
@@ -408,19 +427,19 @@ namespace WindowsFormsApp
         {
             string strUpdate = "Update_NhanVien";
 
-            // Khởi tạo SqlDataAdapter với chuỗi kết nối
+            
             SqlDataAdapter adapter = new SqlDataAdapter();
 
             try
             {
-                // Tạo SqlConnection từ chuỗi kết nối
+                
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    // Tạo SqlCommand cho Update_NhanVien stored procedure
+                    
                     adapter.UpdateCommand = new SqlCommand(strUpdate, conn);
                     adapter.UpdateCommand.CommandType = CommandType.StoredProcedure;
 
-                    // Thêm các tham số cho UpdateCommand
+                    
                     adapter.UpdateCommand.Parameters.AddWithValue("@id", id);
                     adapter.UpdateCommand.Parameters.AddWithValue("@TenNV", tenNV);
                     adapter.UpdateCommand.Parameters.AddWithValue("@SDTNV", sdtNV);
@@ -428,11 +447,11 @@ namespace WindowsFormsApp
                     adapter.UpdateCommand.Parameters.AddWithValue("@GioiTinh", gioiTinh);
                     adapter.UpdateCommand.Parameters.AddWithValue("@NgaySinh", ngaySinh);
 
-                    // Mở kết nối và thực thi cập nhật
+                    
                     conn.Open();
                     int rowsAffected = adapter.UpdateCommand.ExecuteNonQuery();
 
-                    // Trả về true nếu cập nhật thành công, false nếu không
+                    
                     return rowsAffected > 0;
                 }
             }
@@ -454,7 +473,7 @@ namespace WindowsFormsApp
             {
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
-                    using (SqlCommand cmd = new SqlCommand("Search_NhanVien", conn)) // Thay đổi tên stored procedure tương ứng
+                    using (SqlCommand cmd = new SqlCommand("Search_NhanVien", conn)) 
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
                         cmd.Parameters.AddWithValue("@TenNV", searchText);
