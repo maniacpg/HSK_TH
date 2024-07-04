@@ -245,18 +245,26 @@ namespace WindowsFormsApp
         private void btn_Xoa_Click(object sender, EventArgs e)
         {
             int index = dgvNV.CurrentRow.Index;
-            string masv = dv[index]["id"].ToString();
+            int id = Convert.ToInt32(dv[index]["id"]);
+
             try
             {
-                DialogResult dialogResult = MessageBox.Show("Có chắc muốn xoá mã NV " + masv + " không?",
+                DialogResult dialogResult = MessageBox.Show("Có chắc muốn xoá mã NV " + id + " không?",
                     "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+
                 if (dialogResult == DialogResult.Yes)
                 {
-                    // thực hiện xoá
-                }
-                else
-                {
-                    return;
+                    bool success = DeleteNhanVien(id);
+
+                    if (success)
+                    {
+                        MessageBox.Show("Xóa nhân viên thành công.");
+                        LoadData(); // Load lại dữ liệu sau khi xóa
+                    }
+                    else
+                    {
+                        MessageBox.Show("Xóa nhân viên thất bại. Vui lòng thử lại.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -264,6 +272,41 @@ namespace WindowsFormsApp
                 MessageBox.Show("Đã xảy ra lỗi: " + ex.Message);
             }
         }
+
+        private bool DeleteNhanVien(int id)
+        {
+            string strDelete = "Delete_NhanVien";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                SqlDataAdapter adapter = new SqlDataAdapter();
+
+                try
+                {
+                    adapter.DeleteCommand = new SqlCommand(strDelete, conn);
+                    adapter.DeleteCommand.CommandType = CommandType.StoredProcedure;
+                    adapter.DeleteCommand.Parameters.AddWithValue("@id", id);
+
+                    conn.Open();
+                    int rowsAffected = adapter.DeleteCommand.ExecuteNonQuery();
+
+                    return rowsAffected > 0;
+                }
+                catch (SqlException ex)
+                {
+                    Console.WriteLine("Lỗi SQL: " + ex.Message);
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Lỗi: " + ex.Message);
+                    return false;
+                }
+            }
+        }
+
+
+
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
